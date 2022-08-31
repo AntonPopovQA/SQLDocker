@@ -1,42 +1,27 @@
 package ru.netology;
 
-import com.github.javafaker.Faker;
 import lombok.SneakyThrows;
 import org.apache.commons.dbutils.QueryRunner;
-import org.apache.commons.dbutils.handlers.BeanHandler;
-import org.apache.commons.dbutils.handlers.BeanListHandler;
 import org.apache.commons.dbutils.handlers.ScalarHandler;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
-import ru.netology.data.User;
+import ru.netology.page.LoginPage;
 
 import java.sql.DriverManager;
 
+import static com.codeborne.selenide.Selenide.open;
+
 public class TestSQL {
     @BeforeEach
-    @SneakyThrows
-    void setUp() {
-        var faker = new Faker();
-        var runner = new QueryRunner();
-        var dataSQL = "INSERT INTO users(login, password) VALUES (?, ?);";
-
-        try (
-                var conn = DriverManager.getConnection(
-                        "jdbc:mysql://localhost:3306/app", "app", "pass12345"
-                );
-
-        ) {
-            // обычная вставка
-            runner.update(conn, dataSQL, faker.name().username(), "pass12345");
-            runner.update(conn, dataSQL, faker.name().username(), "pass12345");
-        }
+    public void setup() {
+        open("http://localhost:9999");
     }
 
     @Test
     @SneakyThrows
     void stubTest() {
-        var countSQL = "SELECT COUNT(*) FROM users;";
-        var usersSQL = "SELECT * FROM users;";
+        var userSQL = "SELECT login, password FROM users where login = 'vasya';";
+        var codeSQL = "SELECT * FROM auth_codes;";
         var runner = new QueryRunner();
 
         try (
@@ -44,12 +29,11 @@ public class TestSQL {
                         "jdbc:mysql://localhost:3306/app", "app", "pass12345"
                 );
         ) {
-            var count = runner.query(conn, countSQL, new ScalarHandler<>());
-            System.out.println(count);
-            var first = runner.query(conn, usersSQL, new BeanHandler<>(User.class));
-            System.out.println(first);
-            var all = runner.query(conn, usersSQL, new BeanListHandler<>(User.class));
-            System.out.println(all);
+            var loginPage = new LoginPage();
+            var authInfo = runner.query(conn, userSQL,new ScalarHandler<>());
+            var verificationPage = loginPage.validLogin(authInfo);
+            var verificationCode = runner.query(conn,codeSQL,new ScalarHandler<>());
+            var dashBoardPage = verificationPage.validVerify(verificationCode);
         }
     }
 }
