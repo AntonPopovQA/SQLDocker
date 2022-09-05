@@ -1,39 +1,37 @@
 package ru.netology;
 
-import lombok.SneakyThrows;
-import org.apache.commons.dbutils.QueryRunner;
-import org.apache.commons.dbutils.handlers.ScalarHandler;
-import org.junit.jupiter.api.BeforeEach;
+import org.junit.jupiter.api.AfterAll;
+
 import org.junit.jupiter.api.Test;
+import ru.netology.data.DataHelper;
+import ru.netology.data.SQLHelper;
 import ru.netology.page.LoginPage;
-
-import java.sql.DriverManager;
-
 import static com.codeborne.selenide.Selenide.open;
+import static ru.netology.data.SQLHelper.cleanDataBase;
 
 public class TestSQL {
-    @BeforeEach
-    public void setup() {
-        open("http://localhost:9999");
+
+    @AfterAll
+    static void teardown() {
+        cleanDataBase();
     }
 
     @Test
-    @SneakyThrows
     void stubTest() {
-        var userSQL = "SELECT login, password FROM users where login = 'vasya';";
-        var codeSQL = "SELECT * FROM auth_codes;";
-        var runner = new QueryRunner();
-
-        try (
-                var conn = DriverManager.getConnection(
-                        "jdbc:mysql://localhost:3306/app", "app", "pass12345"
-                );
-        ) {
-            var loginPage = new LoginPage();
-            var authInfo = runner.query(conn, userSQL,new ScalarHandler<>());
-            var verificationPage = loginPage.validLogin(authInfo);
-            var verificationCode = runner.query(conn,codeSQL,new ScalarHandler<>());
-            var dashBoardPage = verificationPage.validVerify(verificationCode);
+        var loginPage = open("http://localhost:9999", LoginPage.class);
+        var authInfo = DataHelper.getAuthInfoData();
+        var verificationPage = loginPage.validLogin(authInfo);
+        verificationPage.verifyVerificationPage();
+        var verificationCode = SQLHelper.getVerificationCode();
+        verificationPage.validVerify(verificationCode.getCode());
         }
+
+    @Test
+    void stubTestRandomUser() {
+        var loginPage = open("http://localhost:9999", LoginPage.class);
+        var authInfo = DataHelper.generateUser();
+        loginPage.validLogin(authInfo);
+        loginPage.verifyErrorNotificationVisiblity();
     }
 }
+
