@@ -2,6 +2,7 @@ package ru.netology;
 
 import org.junit.jupiter.api.AfterAll;
 
+import org.junit.jupiter.api.BeforeAll;
 import org.junit.jupiter.api.Test;
 import ru.netology.data.DataHelper;
 import ru.netology.data.SQLHelper;
